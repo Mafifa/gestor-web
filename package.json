@@ -24,7 +24,9 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@midudev/tailwind-animations": "^0.0.7",
-    "better-sqlite3": "^11.1.2"
+    "better-sqlite3": "^11.1.2",
+    "lucide-react": "^0.436.0",
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^2.0.0",
