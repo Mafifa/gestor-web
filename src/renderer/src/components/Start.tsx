@@ -1,98 +1,90 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PlusCircle, Bell, Edit, Trash2, X } from 'lucide-react'
-
-type Product = {
-  id: number
-  name: string
-  price: number
-}
-
-type Section = {
-  id: number
-  title: string
-  products: Product[]
-}
-
-const initialSections: Section[] = [
-  {
-    id: 1,
-    title: 'Electrónicos',
-    products: [
-      { id: 1, name: 'Smartphone', price: 599.99 },
-      { id: 2, name: 'Laptop', price: 999.99 },
-      { id: 3, name: 'Tablet', price: 299.99 }
-    ]
-  },
-  {
-    id: 2,
-    title: 'Ropa',
-    products: [
-      { id: 4, name: 'Camiseta', price: 19.99 },
-      { id: 5, name: 'Pantalón', price: 49.99 },
-      { id: 6, name: 'Zapatos', price: 79.99 }
-    ]
-  },
-  {
-    id: 3,
-    title: 'Hogar',
-    products: [
-      { id: 7, name: 'Lámpara', price: 39.99 },
-      { id: 8, name: 'Sofá', price: 599.99 },
-      { id: 9, name: 'Mesa', price: 199.99 }
-    ]
-  }
-]
+import { Seccion, Producto } from '../../../types/types'
 
 export default function Start() {
-  const [sections, setSections] = useState<Section[]>(initialSections)
-  const [editingSection, setEditingSection] = useState<Section | null>(null)
-  const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({ name: '', price: 0 })
+  const [sections, setSections] = useState<Seccion[]>([])
+  const [products, setProducts] = useState<Producto[]>([])
+  const [editingSection, setEditingSection] = useState<Seccion | null>(null)
+  const [newProduct, setNewProduct] = useState<Omit<Producto, 'id'>>({
+    nombre: '',
+    precio: 0,
+    seccion_id: 0
+  })
 
-  const handleAddSection = () => {
-    const newSection: Section = {
-      id: Date.now(),
-      title: 'Nueva Sección',
-      products: []
+  async function fetchSections() {
+    const result = await window.electron.ipcRenderer.invoke('seccion')
+    setSections(result)
+  }
+
+  async function fetchProducts() {
+    const result = await window.electron.ipcRenderer.invoke('productos')
+    setProducts(result)
+  }
+
+  useEffect(() => {
+    fetchSections()
+    fetchProducts()
+  }, [])
+
+  const handleAddSection = async () => {
+    const newSection = { nombre: 'Nueva Sección' } // Nombre predeterminado para la nueva sección
+    try {
+      const createdSection = await window.electron.ipcRenderer.invoke('agregar-seccion', newSection)
+      if (createdSection && createdSection.id) {
+        setSections([...sections, createdSection])
+      } else {
+        console.error('Error al agregar la sección, no se recibió un ID.')
+      }
+    } catch (error) {
+      console.error('Error al agregar la sección:', error)
     }
-    setSections([...sections, newSection])
-    setEditingSection(newSection)
   }
 
-  const handleEditSection = (section: Section) => {
-    setEditingSection({ ...section, products: [...section.products] })
+  const handleEditSection = (section: Seccion) => {
+    setEditingSection(section)
   }
 
-  const handleDeleteSection = (sectionId: number) => {
+  const handleDeleteSection = async (sectionId: number) => {
+    await window.electron.ipcRenderer.invoke('eliminar-seccion', sectionId)
     setSections(sections.filter((section) => section.id !== sectionId))
   }
 
-  const handleSaveSection = () => {
+  const handleSaveSection = async () => {
     if (editingSection) {
+      const updatedSection = await window.electron.ipcRenderer.invoke(
+        'editar-seccion',
+        editingSection
+      )
       setSections(
-        sections.map((section) => (section.id === editingSection.id ? editingSection : section))
+        sections.map((section) => (section.id === updatedSection.id ? updatedSection : section))
       )
       setEditingSection(null)
     }
   }
 
-  const handleAddProduct = () => {
-    if (editingSection && newProduct.name && newProduct.price > 0) {
-      const updatedProducts = [...editingSection.products, { ...newProduct, id: Date.now() }]
-      setEditingSection({ ...editingSection, products: updatedProducts })
-      setNewProduct({ name: '', price: 0 })
+  const handleAddProduct = async () => {
+    if (editingSection && newProduct.nombre && newProduct.precio > 0) {
+      const productToAdd = {
+        ...newProduct,
+        seccion_id: editingSection.id
+      }
+      const addedProduct = await window.electron.ipcRenderer.invoke(
+        'agregar-producto',
+        productToAdd
+      )
+      setProducts([...products, addedProduct])
+      setNewProduct({ nombre: '', precio: 0, seccion_id: editingSection.id })
     }
   }
 
-  const handleDeleteProduct = (productId: number) => {
-    if (editingSection) {
-      const updatedProducts = editingSection.products.filter((product) => product.id !== productId)
-      setEditingSection({ ...editingSection, products: updatedProducts })
-    }
+  const handleDeleteProduct = async (productId: number) => {
+    await window.electron.ipcRenderer.invoke('eliminar-producto', productId)
+    setProducts(products.filter((product) => product.id !== productId))
   }
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Main content */}
       <div className="flex-1 ml-16 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm">
           <div className="flex items-center justify-between p-4">
@@ -115,7 +107,7 @@ export default function Start() {
                 className="bg-white rounded-lg shadow-md border border-gray-200"
               >
                 <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-800">{section.title}</h2>
+                  <h2 className="text-lg font-semibold text-gray-800">{section.nombre}</h2>
                   <div>
                     <button
                       onClick={() => handleEditSection(section)}
@@ -135,14 +127,23 @@ export default function Start() {
                 </div>
                 <div className="p-4">
                   <ul className="space-y-2">
-                    {section.products.map((product) => (
-                      <li key={product.id} className="flex justify-between items-center">
-                        <span className="text-gray-600">{product.name}</span>
-                        <span className="font-semibold text-gray-800">
-                          ${product.price.toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
+                    {products
+                      .filter((product) => product.seccion_id === section.id)
+                      .map((product) => (
+                        <li key={product.id} className="flex justify-between items-center">
+                          <span className="text-gray-600">{product.nombre}</span>
+                          <span className="font-semibold text-gray-800">
+                            ${product.precio.toFixed(2)}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="p-1 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                            <span className="sr-only">Eliminar producto</span>
+                          </button>
+                        </li>
+                      ))}
                   </ul>
                 </div>
               </div>
@@ -176,59 +177,62 @@ export default function Start() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">
-              {editingSection.id === Date.now() ? 'Agregar' : 'Editar'} Sección
+              {editingSection.id ? 'Editar' : 'Agregar'} Sección
             </h2>
             <input
               type="text"
-              value={editingSection.title}
-              onChange={(e) => setEditingSection({ ...editingSection, title: e.target.value })}
+              value={editingSection.nombre}
+              onChange={(e) => setEditingSection({ ...editingSection, nombre: e.target.value })}
               className="w-full px-3 py-2 border rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
               placeholder="Título de la sección"
             />
             <h3 className="font-semibold mb-2">Productos</h3>
             <ul className="mb-4 space-y-2">
-              {editingSection.products.map((product) => (
-                <li key={product.id} className="flex justify-between items-center">
-                  <span>
-                    {product.name} - ${product.price.toFixed(2)}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteProduct(product.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
+              {products
+                .filter((product) => product.seccion_id === editingSection.id)
+                .map((product) => (
+                  <li key={product.id} className="flex justify-between items-center">
+                    <span>
+                      {product.nombre} - ${product.precio.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Eliminar producto</span>
+                    </button>
+                  </li>
+                ))}
             </ul>
-            <div className="flex mb-4">
+            <div className="flex items-center mb-4">
               <input
                 type="text"
-                value={newProduct.name}
-                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                value={newProduct.nombre}
+                onChange={(e) => setNewProduct({ ...newProduct, nombre: e.target.value })}
                 className="flex-grow px-3 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-300"
                 placeholder="Nombre del producto"
               />
               <input
                 type="number"
-                value={newProduct.price}
+                value={newProduct.precio}
                 onChange={(e) =>
-                  setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })
+                  setNewProduct({ ...newProduct, precio: parseFloat(e.target.value) })
                 }
-                className="w-24 px-3 py-2 border-t border-b border-r focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="w-24 px-3 py-2 border-t border-b focus:outline-none focus:ring-2 focus:ring-blue-300"
                 placeholder="Precio"
               />
               <button
                 onClick={handleAddProduct}
-                className="px-4 py-2 bg-green-500 text-white rounded-r-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
+                className="px-3 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <PlusCircle className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end">
               <button
                 onClick={() => setEditingSection(null)}
-                className="px-4 py-2 text-gray-600 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md mr-2 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 Cancelar
               </button>

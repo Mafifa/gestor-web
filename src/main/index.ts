@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import supabase from './utils/supabase'
 
 function createWindow(): void {
   // Create the browser window.
@@ -35,31 +36,6 @@ function createWindow(): void {
   }
 }
 
-function seccion(nombre: string) {
-  const registerWindow = new BrowserWindow({
-    width: 400,
-    height: 499,
-    fullscreen: false,
-    fullscreenable: false,
-    alwaysOnTop: true,
-    title: nombre,
-    autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
-  })
-
-  // HMR for renderer based on electron-vite cli.
-  // Load the remote URL for development or the local HTML file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    registerWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/productos.html`)
-  } else {
-    registerWindow.loadFile(join(__dirname, '../renderer/productos.html'))
-  }
-}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -77,8 +53,16 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  ipcMain.handle('seccion', async (_, nombre: string) => {
-    seccion(nombre)
+  ipcMain.handle('seccion', async () => {
+    const { data } = await supabase.from('secciones_navegante').select()
+
+    return data
+  })
+
+  ipcMain.handle('productos', async () => {
+    const { data } = await supabase.from('productos_navegante').select()
+
+    return data
   })
 
   createWindow()

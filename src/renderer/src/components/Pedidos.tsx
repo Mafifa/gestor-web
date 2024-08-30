@@ -52,7 +52,7 @@ const initialOrders: Order[] = [
     customerPhone: '+34 456 789 123',
     date: '2023-06-03',
     items: [
-      { id: 5, name: 'Tablet', quantity: 1, price: 299.99 },
+      { id: 5, name: 'Tablet', quantity: 2, price: 299.99 },
       { id: 6, name: 'Teclado Bluetooth', quantity: 1, price: 59.99 }
     ],
     total: 359.98,

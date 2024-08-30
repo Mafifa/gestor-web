@@ -23,9 +23,16 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
     "@midudev/tailwind-animations": "^0.0.7",
+    "@mui/material": "^6.0.0",
+    "@supabase/supabase-js": "^2.45.2",
+    "@types/chart.js": "^2.9.41",
     "better-sqlite3": "^11.1.2",
+    "chart.js": "^4.4.4",
     "lucide-react": "^0.436.0",
+    "react-chartjs-2": "^5.2.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
