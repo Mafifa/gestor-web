@@ -7,7 +7,7 @@ function Menu() {
     { icon: Home, label: 'Inicio' },
     { icon: ShoppingCart, label: 'Pedidos' },
     { icon: Users, label: 'Clientes' },
-    { icon: BarChart2, label: 'Análisis' }
+    { icon: BarChart2, label: 'Analisis' }
   ]
 
   const handleClick = async (label: Options) => {

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Options = 'Inicio' | 'Pedidos' | 'Clientes' | 'Análisis'
+export type Options = 'Inicio' | 'Pedidos' | 'Clientes' | 'Analisis'
 
 interface OptionsState {
   option: Options

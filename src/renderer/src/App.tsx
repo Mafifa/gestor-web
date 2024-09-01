@@ -2,11 +2,12 @@
 import Menu from './components/Menu'
 import Start from './components/Start'
 import Pedidos from './components/Pedidos'
+import Analisis from './components/Analisis'
 import { useOptionsStore } from './store/MainStore'
 
 function App(): JSX.Element {
   const { option } = useOptionsStore()
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
 
   switch (option) {
     case 'Inicio':
@@ -22,6 +23,14 @@ function App(): JSX.Element {
         <main>
           <Menu />
           <Pedidos />
+        </main>
+      )
+
+    case 'Analisis':
+      return (
+        <main>
+          <Menu />
+          <Analisis />
         </main>
       )
 
